@@ -1,0 +1,559 @@
+/* --- GENEL AYARLAR (Reset) --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: #f8f9fa; /* Çok hafif gri, siteyi daha ferah gösterir */
+    color: #333;
+}
+
+/* İçeriği ortalamak için kapsayıcı */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* --- TOP BAR (En üstteki ince şerit) --- */
+.top-bar {
+    background-color: #f3f3f3;
+    font-size: 12px;
+    color: #666;
+    padding: 8px 0;
+}
+
+.top-bar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.top-links a {
+    margin-left: 15px;
+}
+
+.top-links a:hover {
+    color: #e11d61;
+}
+
+/* --- ANA HEADER --- */
+.main-header {
+    background-color: #ffffff;
+    padding: 20px 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); /* Profesyonel görünüm için hafif gölge */
+    position: relative;
+    z-index: 10;
+}
+
+.header-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 30px;
+}
+
+/* Logo Alanı */
+.logo a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+}
+
+/* Arama Çubuğu */
+.search-bar {
+    flex: 1; /* Ortadaki boşluğu kaplamasını sağlar */
+    display: flex;
+    position: relative;
+    max-width: 600px;
+}
+
+.search-bar input {
+    width: 100%;
+    padding: 12px 20px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px 0 0 8px;
+    outline: none;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.search-bar input:focus {
+    border-color: #e11d61;
+}
+
+.search-bar button {
+    background-color: #333;
+    color: white;
+    border: none;
+    padding: 0 25px;
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.search-bar button:hover {
+    background-color: #e11d61;
+}
+
+/* Kullanıcı İşlemleri (Sağ taraf) */
+.user-actions {
+    display: flex;
+    gap: 25px;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: color 0.3s;
+}
+
+.action-item:hover {
+    color: #e11d61;
+}
+
+.action-item i {
+    font-size: 22px;
+}
+
+.action-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.action-text .title {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.action-text .sub {
+    font-size: 12px;
+    color: #777;
+}
+
+/* Sepet İkonu ve Rozeti (Badge) */
+.cart-icon-wrapper {
+    position: relative;
+}
+
+.cart-badge {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    background-color: #e11d61;
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+}
+
+/* --- KATEGORİ MENÜSÜ --- */
+.category-nav {
+    background-color: #ffffff;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.category-nav ul {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+}
+
+.category-nav li a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 15px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #444;
+    position: relative;
+}
+
+/* Alt çizgi efekti (Hover) */
+.category-nav li a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background-color: #e11d61;
+    transition: width 0.3s;
+}
+
+.category-nav li a:hover {
+    color: #e11d61;
+}
+
+.category-nav li a:hover::after {
+    width: 100%;
+}
+
+/* --- AÇILIR MENÜ (DROPDOWN) AYARLARI --- */
+
+/* 1. Ana kapsayıcıyı referans noktası yapıyoruz */
+.dropdown {
+    position: relative; /* Alt menü bunun hizasından başlayacak */
+}
+
+/* 2. Alt Menü Kutusu (Başlangıçta Gizli) */
+.dropdown-content {
+    visibility: hidden; /* Tamamen gizle */
+    opacity: 0; /* Şeffaflığı 0 yap (animasyon için) */
+    position: absolute; /* Ana akışı bozmadan havada asılı dursun */
+    top: 100%; /* Ana yazının tam bittiği yerden başlasın */
+    left: 0;
+    background-color: #ffffff;
+    min-width: 200px; /* Kutunun asgari genişliği */
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08); /* Profesyonel ve derin bir gölge */
+    border-radius: 8px; /* Yumuşak köşeler */
+    padding: 10px 0; /* Üstten alttan boşluk */
+    z-index: 100; /* Diğer resimlerin veya ürünlerin altında kalmasın, en üstte dursun */
+    
+    /* Animasyon (Zarifçe aşağıdan yukarı belirme efekti) */
+    transform: translateY(15px); 
+    transition: all 0.3s ease;
+}
+
+/* 3. Alt Menü İçindeki Linkler */
+.category-nav .dropdown-content a {
+    display: block; /* Flex özelliğini eziyoruz, her linki bir satır yapıyoruz */
+    padding: 10px 20px; 
+    color: #555;
+    font-size: 14px;
+    font-weight: 400;
+    text-align: center; /* Artık !important kullanmana gerek kalmadan çalışacak! */
+}
+/* Alt menü linklerinin ana menüdeki altı çizilme efektini iptal edelim */
+.category-nav .dropdown-content a::after {
+    display: none; 
+}
+
+/* Alt menüdeki bir linkin üstüne gelince */
+.dropdown-content a:hover {
+    background-color: #f8f9fa; /* Arka planı hafif gri yap */
+    color: #e11d61; /* Yazıyı pembe/kırmızı yap */
+    transition: all 0.2s ease;
+}
+
+/* 4. SİHİRLİ DOKUNUŞ: Ana linkin üstüne gelince alt menüyü göster */
+.dropdown:hover .dropdown-content {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0); /* Kutu yukarı doğru kayıp tam yerine otursun */
+}
+
+/* --- ANA İÇERİK VE VİTRİN --- */
+.product-showcase {
+    margin-top: 40px;
+    margin-bottom: 60px;
+}
+
+.section-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 25px;
+    color: #333;
+}
+
+/* KARTLARI YAN YANA DİZEN SİHİRLİ KOD (Grid) */
+.product-grid {
+    display: grid;
+    /* Kartların her biri en az 250px olsun, sığdığı kadar yan yana dizilsin */
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px; /* Kartlar arası boşluk */
+}
+
+/* --- ÜRÜN KARTI TASARIMI --- */
+.product-card {
+    background-color: #fff;
+    border: 1px solid #eaeaea;
+    border-radius: 8px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease; /* Hover animasyonu için */
+}
+
+/* Fareyle kartın üstüne gelince çalışacak efekt */
+.product-card:hover {
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1); /* Gölgelendir */
+    transform: translateY(-5px); /* Kartı hafif yukarı kaldır */
+}
+
+/* Sol üstteki indirim vb. etiketi */
+.badge {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background-color: #333;
+    color: white;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 20px;
+    z-index: 2;
+}
+
+/* Sağ üstteki kalp butonu */
+.fav-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    z-index: 2;
+    transition: color 0.3s;
+}
+
+.fav-btn:hover {
+    color: #e11d61;
+}
+
+
+/* Ürün Resmi */
+.card-image img {
+    width: 100%;
+    height: 180px; /* SİHİRLİ DOKUNUŞ: Kutunun çok uzamasını engeller */
+    object-fit: contain; /* Resmi kesmeden, etrafında boşluk bırakarak tam sığdırır */
+    padding: 10px; /* Kenarlardan biraz nefes alsın */
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+/* Kartın altındaki yazı ve buton kısmı */
+.card-details {
+    padding: 12px; /* İç boşluğu 15'ten 12'ye düşürdük */
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; 
+}
+
+.cargo-badge {
+    background-color: #f1f1f1;
+    color: #333;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    width: max-content;
+    margin-bottom: 10px;
+}
+
+.product-title {
+    font-size: 13px; /* Nalbur sitelerine uygun bir tık daha küçük font */
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 8px; /* Alt boşluğu kıstık */
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Yıldızlar */
+.rating {
+    color: #ffc107; /* Sarı renk */
+    font-size: 12px;
+    margin-bottom: 15px;
+}
+
+.review-count {
+    color: #888;
+    margin-left: 5px;
+}
+
+/* Fiyat kısmı */
+.price-container {
+    margin-top: auto; 
+    margin-bottom: 10px; /* Butonla arasındaki boşluğu daralttık */
+}
+
+.old-price {
+    font-size: 13px;
+    color: #999;
+    text-decoration: line-through; /* Üstünü çiz */
+    display: block;
+}
+
+.new-price {
+    font-size: 20px;
+    font-weight: 700;
+    color: #e11d61;
+}
+
+.price {
+    font-size: 20px;
+    font-weight: 700;
+    color: #e11d61;
+}
+
+/* Sepete Ekle Butonu */
+.add-to-cart-btn {
+    width: 100%;
+    background-color: #fff;
+    color: #e11d61;
+    border: 1px solid #e11d61;
+    padding: 10px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.add-to-cart-btn:hover {
+    background-color: #e11d61;
+    color: white;
+}
+
+/* --- KAMPANYA SLIDER TASARIMI --- */
+/* Slider Ana Kutusu */
+.hero-slider-container {
+    position: relative;
+    width: 100%;
+    height: 300px; /* 400px'ten 300px'e düşürdük */
+    background-color: #f5f5f5; 
+    overflow: hidden; 
+    border-radius: 12px;
+    margin-bottom: 40px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+.slider-wrapper {
+    display: flex;
+    transition: transform 0.5s ease-in-out; /* Kayma efekti (0.5 saniyede yumuşak geçiş) */
+}
+
+.slide {
+    min-width: 100%; /* Her resim kutunun tamamını kaplasın */
+}
+
+/* İçindeki Resimler */
+.slide img {
+    width: 100%;
+    height: 300px; /* Burayı da kutuyla aynı yaptık */
+    display: block;
+    object-fit: cover; 
+    border-radius: 12px;
+    object-position: center center; /* YENİ EKLENEN KOD: Görseli tam ortadan odaklar */
+}
+
+/* Yön Butonları (Sağ-Sol Oklar) */
+.slider-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%); /* Tam dikey ortaya hizalama hilesi */
+    background: rgba(255, 255, 255, 0.8);
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    font-size: 18px;
+    color: #333;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.3s;
+}
+
+.slider-btn:hover {
+    background: #e11d61;
+    color: white;
+}
+
+.prev-btn { left: 20px; }
+.next-btn { right: 20px; }
+
+/* Noktalar */
+.slider-dots {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%); /* Tam yatay ortaya hizalama hilesi */
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    transition: background 0.3s;
+}
+
+.dot.active {
+    background: #e11d61;
+    width: 25px; /* Aktif olan nokta biraz daha uzun (hap gibi) görünsün */
+    border-radius: 10px;
+}
+
+.promotion-bar {
+    background: #333; /* Koyu modern bir gri/siyah */
+    color: #fff;
+    padding: 10px 0;
+    overflow: hidden;
+    position: relative;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.ticker-wrapper {
+    display: flex;
+    white-space: nowrap;
+    animation: ticker 15s linear infinite;
+}
+
+.ticker-text {
+    padding-left: 100%;
+    display: inline-block;
+}
+
+#countdown {
+    color: #ff6600; /* Turuncu vurgu */
+    margin-left: 5px;
+}
+
+@keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+}
+
+/* Mouse ile üzerine gelince durması için */
+.promotion-bar:hover .ticker-wrapper {
+    animation-play-state: paused;
+}
+
+.spec-box {
+    transition: all 0.3s ease;
+}
+
+.spec-box:hover {
+    border-color: #ff6600; /* Nalbur turuncusu */
+    background: #fff8f5;
+    transform: translateY(-2px);
+}
