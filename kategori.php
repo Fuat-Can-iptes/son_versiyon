@@ -2,7 +2,8 @@
 session_start();
 include 'baglan.php'; 
 
-$secilenKat = isset($_GET['kat']) ? $_GET['kat'] : '';
+// URL'den gelen kategori ID'sini güvenli bir şekilde alalım (Eğer yoksa 0 yap)
+$secilenKatId = isset($_GET['kat']) ? (int)$_GET['kat'] : 0;
 
 // 1. KATEGORİ HARİTASI (Slug uyuşmazlıkları giderildi)
 $anaKategoriler = [
