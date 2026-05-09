@@ -1268,7 +1268,7 @@ Jouis Tornavida ve Onarım Seti 115 Parça Çok Amaçlı Hassas Onarım Aletleri
     'ozellikler' => ['Süper Hızlı Yapıştırıcı', 'S02 Japon Yapıştırıcı Formülü', 'Dayanıklı Tasarım', 'Güvenli Yapıştırma İşlemi İçin İdeal', 'Profesyonel ve Amatör Kullanım İçin Uygun', 'Uzun Ömürlü Malzeme','Mikasso Kalitesi']
 ],
 
-// --- İŞ GÜVENLİĞİ: BARET REYONU ---
+// --- İŞ GÜVENLİĞİ: BARET REYONU --- 
 [
     "id" => 143, 
     "kat" => "baret", 

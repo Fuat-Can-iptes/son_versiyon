@@ -1,34 +1,72 @@
-<!-- header.php -->
 <header class="main-header">
     <div class="container header-wrapper">
         <div class="logo">
             <a href="index.php"><i class="fa-solid fa-toolbox" style="color: #ff6600;"></i> <span>NalburDükkan</span></a>
         </div>
-        <!-- header.php içindeki search-bar kısmını şu şekilde revize et -->
-<form action="arama.php" method="GET" class="search-bar">
-    <input type="text" name="q" placeholder="Ürün, kategori veya marka ara..." required>
-    <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
-</form>
+        
+        <form action="arama.php" method="GET" class="search-bar">
+            <input type="text" name="q" placeholder="Ürün, kategori veya marka ara..." required>
+            <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </form>
+
         <div class="user-actions">
-            <a href="#" class="action-item">
-                <i class="fa-regular fa-user"></i>
-                <div class="action-text"><span class="title">Giriş Yap</span><span class="sub">veya Üye Ol</span></div>
-            </a>
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <div class="action-item user-dropdown-wrapper">
+                    <i class="fa-regular fa-user"></i>
+                    <div class="action-text">
+                        <span class="title">Merhaba,</span>
+                        <span class="sub"><?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
+                    </div>
+                    
+                    <div class="user-dropdown-content">
+                        <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] == 1): ?>
+                            <a href="admin_panel.php" style="font-weight: bold; color: #ff6600;">
+                                <i class="fa-solid fa-gauge-high"></i> Admin Paneli
+                            </a>
+                            <hr style="border: 0; border-top: 1px solid #eee; margin: 5px 0;">
+                        <?php endif; ?>
+                        
+                        <a href="favorilerim.php"><i class="fa-solid fa-heart"></i> Favorilerim</a>
+                        <a href="siparislerim.php"><i class="fa-solid fa-box"></i> Siparişlerim</a>
+                        <a href="profilim.php"><i class="fa-solid fa-gear"></i> Profil Ayarları</a>
+                        <a href="cikis.php" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i> Güvenli Çıkış</a>
+                    </div>
+                </div>
+
+            <?php else: ?>
+                <a href="giris.php" class="action-item">
+                    <i class="fa-regular fa-user"></i>
+                    <div class="action-text">
+                        <span class="title">Giriş Yap</span>
+                        <span class="sub">veya Üye Ol</span>
+                    </div>
+                </a>
+            <?php endif; ?>
+
             <a href="sepet.php" class="action-item cart-action">
                 <div class="cart-icon-wrapper">
                     <i class="fa-solid fa-cart-shopping"></i>
-                    <span class="cart-badge"><?php echo isset($_SESSION['sepet']) ? array_sum($_SESSION['sepet']) : 0; ?></span>
+                    <span class="cart-badge">
+                        <?php echo isset($_SESSION['sepet']) ? array_sum($_SESSION['sepet']) : 0; ?>
+                    </span>
                 </div>
                 <div class="action-text"><span class="title">Sepetim</span></div>
             </a>
+
+<a href="favorilerim.php" class="action-item">
+    <div class="cart-icon-wrapper">
+        <i class="fa-regular fa-heart" style="font-size: 22px;"></i>
         </div>
+    <div class="action-text">
+        <span class="title">Favorilerim</span>
     </div>
-</header>
+</a>
+
+        </div> </div> </header>
 
 <nav class="category-nav">
     <div class="container">
         <ul>
-            <!-- 1. EL ALETLERİ -->
             <li class="dropdown">
                 <a href="kategori.php?kat=el-aletleri"><i class="fa-solid fa-wrench"></i> El Aletleri</a>
                 <div class="dropdown-content">
@@ -38,8 +76,6 @@
                     <a href="kategori.php?kat=olcum">Ölçüm Aletleri</a>
                 </div>
             </li>
-
-            <!-- 2. ELEKTRİKLİ ALETLER -->
             <li class="dropdown">
                 <a href="kategori.php?kat=elektrikli-aletler"><i class="fa-solid fa-screwdriver-wrench"></i> Elektrikli Aletler</a>
                 <div class="dropdown-content">
@@ -49,8 +85,6 @@
                     <a href="kategori.php?kat=testere">Elektrikli Testereler</a>
                 </div>
             </li>
-
-            <!-- 3. BAHÇE & TARIM -->
             <li class="dropdown">
                 <a href="kategori.php?kat=bahce-tarim"><i class="fa-solid fa-leaf"></i> Bahçe & Tarım</a>
                 <div class="dropdown-content">
@@ -60,8 +94,6 @@
                     <a href="kategori.php?kat=ilaclama">İlaçlama Pompaları</a>
                 </div>
             </li>
-
-            <!-- 4. HIRDAVAT -->
             <li class="dropdown">
                 <a href="kategori.php?kat=hirdavat"><i class="fa-solid fa-toolbox"></i> Hırdavat</a>
                 <div class="dropdown-content">
@@ -71,19 +103,15 @@
                     <a href="kategori.php?kat=tesisat">Tesisat Malzemeleri</a>
                 </div>
             </li>
-
-            <!-- 5. BOYA & YAPI -->
             <li class="dropdown">
                 <a href="kategori.php?kat=boya-yapi"><i class="fa-solid fa-paint-roller"></i> Boya & Yapı</a>
                 <div class="dropdown-content">
                     <a href="kategori.php?kat=boya">İç Cephe Boyaları</a>
-                    <a href="kategori.php?kat=dis-boya">Dış Cephe Boyaları</a>
+                    <a href="kategori.php?kat=dis-cephe">Dış Cephe Boyaları</a>
                     <a href="kategori.php?kat=firca">Fırça & Rulolar</a>
                     <a href="kategori.php?kat=yapistirici">Yapıştırıcı & Silikon</a>
                 </div>
             </li>
-
-            <!-- 6. İŞ GÜVENLİĞİ -->
             <li class="dropdown">
                 <a href="kategori.php?kat=is-guvenligi"><i class="fa-solid fa-hard-hat"></i> İş Güvenliği</a>
                 <div class="dropdown-content">
@@ -108,32 +136,25 @@
 
 <script>
 function updateCountdown() {
-    // Babalar Günü Hedefi: 21 Haziran 2026
     const targetDate = new Date("June 21, 2026 00:00:00").getTime();
     const now = new Date().getTime();
     const gap = targetDate - now;
 
-    // Zaman birimleri
     const second = 1000;
     const minute = second * 60;
     const hour = minute * 60;
     const day = hour * 24;
 
-    // Kalan süreyi hesapla
     const d = Math.floor(gap / day);
     const h = Math.floor((gap % day) / hour);
     const m = Math.floor((gap % hour) / minute);
     const s = Math.floor((gap % minute) / second);
 
-    // Ekrana yazdır
     const display = document.getElementById("countdown");
     if(display) {
         display.innerText = `${d} Gün, ${h} Saat, ${m} Dakika, ${s} Saniye`;
     }
 }
-
-// Her saniye güncelle ve ilk açılışta çalıştır
 setInterval(updateCountdown, 1000);
 updateCountdown();
 </script>
-

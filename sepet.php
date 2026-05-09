@@ -1,31 +1,50 @@
 <?php
 session_start();
-include 'urunler.php'; // Ürün havuzuna erişim
+// Hata ayıklama modunu açıyoruz (500 hatası yerine gerçek hatayı görmek için)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-// 1. SEPETİ BOŞALTMA MANTIĞI (Aynı sayfa içinde çözüyoruz)
+include 'baglan.php'; // Veritabanı bağlantısı
+
+// 1. SEPETİ BOŞALTMA MANTIĞI
 if (isset($_GET['islem']) && $_GET['islem'] == 'sepeti_bosalt') {
     unset($_SESSION['sepet']);
-    header("Location: sepet.php"); // Sayfayı yenileyerek temiz halini gösterir
+    header("Location: sepet.php");
     exit;
 }
 
-// 2. SEPETE ÜRÜN EKLEME MANTIĞI (Eğer başka sayfadan POST gelirse)
+// 2. SEPETE ÜRÜN EKLEME VEYA ÇIKARMA MANTIĞI
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['urun_id'])) {
-    $id = $_POST['urun_id'];
-    if (!isset($_SESSION['sepet'])) { $_SESSION['sepet'] = []; }
+    $id = intval($_POST['urun_id']);
     
-    if (isset($_SESSION['sepet'][$id])) {
-        $_SESSION['sepet'][$id]++;
+    // Güvenlik: Önce veritabanında böyle bir ürün var mı kontrol edelim
+    $kontrolSorgu = $db->prepare("SELECT Id FROM Products WHERE Id = ? AND IsActive = 1");
+    $kontrolSorgu->execute([$id]);
+    
+    if ($kontrolSorgu->rowCount() > 0) {
+        if (!isset($_SESSION['sepet'])) { 
+            $_SESSION['sepet'] = array(); 
+        }
+        
+        // Ürün zaten sepette varsa sayısını artır, yoksa 1 olarak ekle
+        if (isset($_SESSION['sepet'][$id])) {
+            $_SESSION['sepet'][$id]++;
+        } else {
+            $_SESSION['sepet'][$id] = 1;
+        }
+        
+        // Ürün sepete eklendikten sonra sepet sayfasına yönlendir
+        header("Location: sepet.php");
+        exit;
     } else {
-        $_SESSION['sepet'][$id] = 1;
+        echo "<script>alert('Ürün bulunamadı veya pasif!'); window.location.href='index.php';</script>";
+        exit;
     }
 }
 
-// 3. FİYAT HESAPLAMA İÇİN HAVUZU BİRLEŞTİR
-$tumUrunHavuzu = array_merge($indirimliUrunler, $cokSatanlar, $kategoriUrunleri);
 $genelToplam = 0;
 ?>
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -42,7 +61,7 @@ $genelToplam = 0;
             <h2><i class="fa-solid fa-cart-shopping"></i> Alışveriş Sepetiniz</h2>
             <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
 
-            <?php if (!empty($_SESSION['sepet'])): ?>
+            <?php if (!empty($_SESSION['sepet'])) { ?>
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
                     <thead>
                         <tr style="text-align: left; background: #f8f9fa;">
@@ -54,42 +73,52 @@ $genelToplam = 0;
                     </thead>
                     <tbody>
                         <?php 
-                        foreach ($_SESSION['sepet'] as $id => $adet): 
-                            // Ürün detayını bulalım
-                            $urunDetay = null;
-                            foreach ($tumUrunHavuzu as $u) {
-                                if ($u['id'] == $id) { $urunDetay = $u; break; }
-                            }
+                        foreach ($_SESSION['sepet'] as $id => $adet) { 
+                            // Sadece sepetteki ürünlerin bilgisini veritabanından çekiyoruz
+                            $urunSorgu = $db->prepare("SELECT Name, Price FROM Products WHERE Id = ?");
+                            $urunSorgu->execute([$id]);
+                            $urunDetay = $urunSorgu->fetch(PDO::FETCH_ASSOC);
 
-                            if ($urunDetay):
-                                $araToplam = $urunDetay['fiyat'] * $adet;
+                            if ($urunDetay) {
+                                $araToplam = $urunDetay['Price'] * $adet;
                                 $genelToplam += $araToplam;
                         ?>
                             <tr style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 12px;"><?php echo $urunDetay['baslik']; ?></td>
+                                <td style="padding: 12px;"><?php echo htmlspecialchars($urunDetay['Name']); ?></td>
                                 <td style="padding: 12px;"><?php echo $adet; ?> Adet</td>
-                                <td style="padding: 12px;"><?php echo number_format($urunDetay['fiyat'], 2); ?> TL</td>
-                                <td style="padding: 12px;"><strong><?php echo number_format($araToplam, 2); ?> TL</strong></td>
+                                <td style="padding: 12px;"><?php echo number_format($urunDetay['Price'], 2, ',', '.'); ?> TL</td>
+                                <td style="padding: 12px;"><strong><?php echo number_format($araToplam, 2, ',', '.'); ?> TL</strong></td>
                             </tr>
-                        <?php endif; endforeach; ?>
+                        <?php 
+                            } 
+                        } 
+                        ?>
                     </tbody>
                 </table>
 
                 <div style="display: flex; justify-content: space-between; align-items: center; background: #fff8f5; padding: 20px; border-radius: 8px;">
-                    <h3 style="margin: 0;">Genel Toplam: <span style="color: #ff6600; font-size: 24px;"><?php echo number_format($genelToplam, 2); ?> TL</span></h3>
+                    <h3 style="margin: 0;">Genel Toplam: <span style="color: #ff6600; font-size: 24px;"><?php echo number_format($genelToplam, 2, ',', '.'); ?> TL</span></h3>
+                    <!-- sepet.php içinde toplam fiyatın altına -->
+<div style="text-align: right; margin-top: 20px;">
+    <a href="siparis_ver.php" class="filter-btn" style="padding: 15px 30px; text-decoration: none;">
+        <i class="fa-solid fa-check-double"></i> Siparişi Tamamla
+    </a>
+</div>
                     <div>
                         <a href="index.php" style="text-decoration: none; color: #333; padding: 10px 20px; border: 1px solid #ccc; border-radius: 5px; margin-right: 10px;">Alışverişe Devam Et</a>
                         <a href="sepet.php?islem=sepeti_bosalt" style="text-decoration: none; color: white; background: #dc3545; padding: 10px 20px; border-radius: 5px;">Sepeti Boşalt</a>
                     </div>
                 </div>
 
-            <?php else: ?>
+            <?php } else { ?>
                 <div style="text-align: center; padding: 40px;">
                     <p style="font-size: 18px; color: #666;">Sepetinizde ürün bulunmamaktadır.</p>
                     <a href="index.php" style="color: #ff6600; text-decoration: underline;">Ürünleri incelemek için tıklayın</a>
                 </div>
-            <?php endif; ?>
+            <?php } ?>
         </div>
     </main>
+    
+    <?php include 'footer.php'; ?>
 </body>
 </html>

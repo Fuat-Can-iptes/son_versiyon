@@ -1,12 +1,16 @@
 <?php
 session_start();
-// Hata ayıklama modunu açık tutuyoruz (Pazar günkü teslime kadar faydalı olur)
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+include 'baglan.php'; 
 
-include 'urunler.php';
-include 'header.php'; // Header içeriği buradan çekiliyor
+// 1. "İndirimli Ürünler" Sorgusu
+$sorguIndirimli = $db->query("SELECT * FROM Products WHERE IsActive = 1 ORDER BY Price ASC LIMIT 4");
+$indirimliUrunler = $sorguIndirimli->fetchAll(PDO::FETCH_ASSOC);
+
+// 2. "En Çok Tercih Edilenler" Sorgusu
+$sorguCokSatanlar = $db->query("SELECT * FROM Products WHERE IsActive = 1 ORDER BY Id DESC LIMIT 4");
+$cokSatanlar = $sorguCokSatanlar->fetchAll(PDO::FETCH_ASSOC);
+
+include 'header.php'; 
 ?>
 
 <!DOCTYPE html>
@@ -21,9 +25,6 @@ include 'header.php'; // Header içeriği buradan çekiliyor
 </head>
 <body>
 
-    <!-- Üst Bar, Header ve Navigasyon Manuel Olarak Buradan Silindi; Çünkü header.php İçinde Mevcut -->
-
-    <!-- SLIDER ALANI -->
     <div class="container"> 
         <div class="hero-slider-container">
             <div class="slider-wrapper">
@@ -38,59 +39,69 @@ include 'header.php'; // Header içeriği buradan çekiliyor
         </div>
     </div>
    
-    <main class="container product-showcase">
-        <h2 class="section-title">İndirimli Ürünler</h2>
-        <div class="product-grid">
-            <?php foreach($indirimliUrunler as $urun): ?>
-            <div class="product-card">
-                <div class="badge"><?php echo $urun['etiket']; ?></div>
-                <button class="fav-btn"><i class="fa-regular fa-heart"></i></button>
-                <div class="card-image"><img src="<?php echo $urun['resim']; ?>" alt="Ürün"></div>
-                <div class="card-details">
-                    <span class="cargo-badge"><?php echo $urun['kargo']; ?></span>
-                    <h3 class="product-title"><?php echo $urun['baslik']; ?></h3>
-                    
-                    <div class="price-container">
-                        <span class="old-price"><?php echo $urun['eski_fiyat']; ?> TL</span>
-                        <span class="new-price"><?php echo $urun['fiyat']; ?> TL</span>
+    <main class="container home-content">
+        
+        <section class="home-section">
+            <h2 class="section-title">İndirimli Ürünler</h2>
+            <div class="product-grid">
+                <?php foreach($indirimliUrunler as $urun): ?>
+                    <div class="product-card">
+                        <a href="favori_islem.php?id=<?php echo $urun['Id']; ?>" class="fav-btn">
+                            <i class="fa-regular fa-heart"></i>
+                        </a>
+                        <div class="badge" style="background-color: #ff6600;">Fırsat</div>
+                        <a href="urun-detay.php?id=<?php echo $urun['Id']; ?>">
+                            <div class="card-image"><img src="<?php echo $urun['ImagePath']; ?>" alt="Ürün"></div>
+                        </a>
+                        <div class="card-details">
+                            <span class="cargo-badge">Hızlı Kargo</span>
+                            <h3 class="product-title"><?php echo htmlspecialchars($urun['Name']); ?></h3>
+                            <div class="price-container">
+                                <span class="new-price"><?php echo number_format($urun['Price'], 2, ',', '.'); ?> TL</span>
+                            </div>
+                            <form action="sepet.php" method="POST">
+                                <input type="hidden" name="urun_id" value="<?php echo $urun['Id']; ?>">
+                                <input type="hidden" name="islem" value="ekle">
+                                <button type="submit" class="add-to-cart-btn">Sepete Ekle</button>
+                            </form>
+                        </div>
                     </div>
-
-                    <form action="sepet.php" method="POST">
-                        <input type="hidden" name="urun_id" value="<?php echo $urun['id']; ?>">
-                        <input type="hidden" name="islem" value="ekle">
-                        <button type="submit" class="add-to-cart-btn">Sepete Ekle</button>
-                    </form>
-                </div>
+                <?php endforeach; ?>
             </div>
-            <?php endforeach; ?>
-        </div>
+        </section>
+
+        <section class="home-section" style="margin-top: 50px;">
+            <h2 class="section-title">En Çok Tercih Edilenler</h2>
+            <div class="product-grid">
+                <?php foreach($cokSatanlar as $urun): ?>
+                <div class="product-card">
+                    <div class="badge" style="background-color: #28a745;">Çok Satan</div>
+                    <a href="favori_islem.php?id=<?php echo $urun['Id']; ?>" class="fav-btn">
+                        <i class="fa-regular fa-heart"></i>
+                    </a>
+                    <a href="urun-detay.php?id=<?php echo $urun['Id']; ?>">
+                        <div class="card-image"><img src="<?php echo $urun['ImagePath']; ?>" alt="Ürün"></div>
+                    </a>
+                    <div class="card-details">
+                        <span class="cargo-badge">Ücretsiz Kargo</span>
+                        <h3 class="product-title"><?php echo htmlspecialchars($urun['Name']); ?></h3>
+                        <div class="price-container">
+                            <span class="new-price"><?php echo number_format($urun['Price'], 2, ',', '.'); ?> TL</span>
+                        </div>
+                        <form action="sepet.php" method="POST">
+                            <input type="hidden" name="urun_id" value="<?php echo $urun['Id']; ?>">
+                            <input type="hidden" name="islem" value="ekle">
+                            <button type="submit" class="add-to-cart-btn">Sepete Ekle</button>
+                        </form>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </section>
+
     </main>
 
-    <section class="container product-showcase">
-        <h2 class="section-title">En Çok Tercih Edilenler</h2>
-        <div class="product-grid">
-            <?php foreach($cokSatanlar as $urun): ?>
-            <div class="product-card">
-                <div class="badge" style="background-color: <?php echo isset($urun['renk']) ? $urun['renk'] : '#333'; ?>;"><?php echo $urun['etiket']; ?></div>
-                <button class="fav-btn"><i class="fa-regular fa-heart"></i></button>
-                <div class="card-image"><img src="<?php echo $urun['resim']; ?>" alt="Ürün"></div>
-                <div class="card-details">
-                    <span class="cargo-badge">Ücretsiz Kargo</span>
-                    <h3 class="product-title"><?php echo $urun['baslik']; ?></h3>
-                    <div class="price-container"><span class="price"><?php echo $urun['fiyat']; ?> TL</span></div>
-                    <form action="sepet.php" method="POST">
-                        <input type="hidden" name="urun_id" value="<?php echo $urun['id']; ?>">
-                        <input type="hidden" name="islem" value="ekle">
-                        <button type="submit" class="add-to-cart-btn">Sepete Ekle</button>
-                    </form>
-                </div>
-            </div>
-            <?php endforeach; ?>
-        </div>
-    </section>
-
     <script>
-        // Slider JS kodların aynen kalıyor...
         const wrapper = document.querySelector('.slider-wrapper');
         const dots = document.querySelectorAll('.dot');
         let slideIndex = 0;
