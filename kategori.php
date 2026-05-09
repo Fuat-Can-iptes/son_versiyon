@@ -2,10 +2,10 @@
 session_start();
 include 'baglan.php'; 
 
-// URL'den gelen kategori ID'sini güvenli bir şekilde alalım (Eğer yoksa 0 yap)
-$secilenKatId = isset($_GET['kat']) ? (int)$_GET['kat'] : 0;
+// 1. DÜZELTME: 'kat' parametresini string olarak alalım (Slug için metin lazım)
+$secilenKat = isset($_GET['kat']) ? $_GET['kat'] : '';
 
-// 1. KATEGORİ HARİTASI (Slug uyuşmazlıkları giderildi)
+// 1. KATEGORİ HARİTASI
 $anaKategoriler = [
     "el-aletleri"        => ["cekic-balyoz", "tornavida", "pense", "olcum"],
     "elektrikli-aletler" => ["matkap", "taslama", "kaynak", "testere"],
@@ -15,30 +15,31 @@ $anaKategoriler = [
     "is-guvenligi"       => ["baret", "eldiven", "ayakkabi", "maske", "gozluk"]
 ];
 
-// Alt kategori mi yoksa ana kategori mi kontrolü
+// 2. DÜZELTME: Alt kategori mi yoksa ana kategori mi kontrolü
+// $secilenKatId yerine doğru değişken adını ($secilenKat) kullanıyoruz
 if (array_key_exists($secilenKat, $anaKategoriler)) {
     $sluglar = $anaKategoriler[$secilenKat];
 } else {
+    // Eğer ana kategori değilse, tekil slug olarak diziye ekle
     $sluglar = [$secilenKat];
 }
 
+// SQL için soru işaretleri oluşturma
 $soruIsaretleri = str_repeat('?,', count($sluglar) - 1) . '?';
 
 // 2. DİNAMİK FİLTRELEME MANTIĞI
 $params = $sluglar; 
 $ek_sorgu = "";
 
-// A. İndirim Filtresi
+// Filtreleri kontrol et (Buralar senin kodunla aynı, sadece değişken adından emin olduk)
 if (isset($_GET['f']) && $_GET['f'] == 'indirim') {
     $ek_sorgu .= " AND p.OldPrice > p.Price";
 }
-
-// B. Stok Filtresi
 if (isset($_GET['s']) && $_GET['s'] == 'stok') {
     $ek_sorgu .= " AND p.StockQuantity > 0";
 }
 
-// C. Fiyat Aralığı Filtresi
+// Fiyat Aralığı Filtresi
 if (isset($_GET['p'])) {
     if ($_GET['p'] == '0-1000') {
         $ek_sorgu .= " AND p.Price < 1000";
