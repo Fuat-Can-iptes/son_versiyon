@@ -27,7 +27,11 @@
                         <?php endif; ?>
                         
                         <a href="favorilerim.php"><i class="fa-solid fa-heart"></i> Favorilerim</a>
-                        <a href="siparislerim.php"><i class="fa-solid fa-box"></i> Siparişlerim</a>
+                        <a href="siparisler.php"><i class="fa-solid fa-box"></i> Siparişlerim</a>
+                        
+                        <!-- YENİ EKLENEN: ADRESLERİM LİNKİ -->
+                        <a href="adreslerim.php"><i class="fa-solid fa-map-location-dot"></i> Adreslerim</a>
+                        
                         <a href="profilim.php"><i class="fa-solid fa-gear"></i> Profil Ayarları</a>
                         <a href="cikis.php" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i> Güvenli Çıkış</a>
                     </div>
@@ -53,16 +57,18 @@
                 <div class="action-text"><span class="title">Sepetim</span></div>
             </a>
 
-<a href="favorilerim.php" class="action-item">
-    <div class="cart-icon-wrapper">
-        <i class="fa-regular fa-heart" style="font-size: 22px;"></i>
-        </div>
-    <div class="action-text">
-        <span class="title">Favorilerim</span>
-    </div>
-</a>
+            <a href="favorilerim.php" class="action-item">
+                <div class="cart-icon-wrapper">
+                    <i class="fa-regular fa-heart" style="font-size: 22px;"></i>
+                </div>
+                <div class="action-text">
+                    <span class="title">Favorilerim</span>
+                </div>
+            </a>
 
-        </div> </div> </header>
+        </div> 
+    </div> 
+</header>
 
 <nav class="category-nav">
     <div class="container">

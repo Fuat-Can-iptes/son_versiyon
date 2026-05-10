@@ -1,167 +1,175 @@
 <?php
 session_start();
-
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 include 'baglan.php';
 
-// Güvenlik Kontrolü
-if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] != 1) {
+// Güvenlik: Sadece adminler girebilir
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] != 1) {
     header("Location: index.php");
     exit;
 }
 
-// --- İSTATİSTİKLERİ ÇEKELİM ---
-$toplamUrun = $db->query("SELECT COUNT(*) FROM products")->fetchColumn();
-$toplamSiparis = $db->query("SELECT COUNT(*) FROM orders")->fetchColumn();
-$toplamCiro = $db->query("SELECT SUM(TotalPrice) FROM orders")->fetchColumn() ?? 0;
+try {
+    // 1. Toplam Kullanıcı Sayısı (Admin hariç)
+    $toplamKullanici = $db->query("SELECT COUNT(*) FROM users WHERE RoleId != 1")->fetchColumn();
 
-// Ürünleri çekelim
-$urunler = $db->query("SELECT * FROM products ORDER BY Id DESC")->fetchAll(PDO::FETCH_ASSOC);
+    // 2. Toplam Ürün Sayısı
+    $toplamUrun = $db->query("SELECT COUNT(*) FROM products")->fetchColumn();
 
-// Son Siparişleri çekelim (Mevcut şemana göre OrderAt kullanıyoruz)
-$siparisler = $db->query("SELECT o.*, CONCAT(u.FName, ' ', u.LName) as MusteriAd FROM orders o JOIN users u ON o.UserId = u.Id ORDER BY o.OrderAt DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
+    // 3. Bekleyen Müşteri Siparişleri (Satış)
+    $bekleyenSiparis = $db->query("SELECT COUNT(*) FROM orders WHERE Status = 'pending'")->fetchColumn();
+
+    // 4. KRİTİK STOK SAYISI
+    $kritikStokSorgu = $db->query("SELECT COUNT(*) FROM stocks WHERE Quantity <= MinStock");
+    $kritikStokSayisi = $kritikStokSorgu->fetchColumn();
+
+    // 5. YENİ: BEKLEYEN SATIN ALMA EMİRLERİ (Tedarikçiden mal beklenenler)
+    // Hocanın görmek istediği purchaseorders tablosundan çekiyoruz.
+    $bekleyenTedarik = $db->query("SELECT COUNT(*) FROM purchaseorders WHERE Status = 'pending'")->fetchColumn();
+
+    // Son Siparişler (Satışlar)
+    $sonSiparisler = $db->query("
+        SELECT o.Id, o.OrderAt, o.TotalPrice, o.Status, o.ReceiverName, o.PaymentMethod, 
+               CONCAT(u.FName, ' ', u.LName) as UserName 
+        FROM orders o 
+        LEFT JOIN users u ON o.UserId = u.Id 
+        ORDER BY o.Id DESC LIMIT 10
+    ")->fetchAll(PDO::FETCH_ASSOC);
+
+} catch (Exception $e) {
+    die("Veritabanı hatası: " . $e->getMessage());
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Yönetim Paneli | NalburDükkan</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NalburDükkan - Yönetim Paneli</title>
+    <link rel="stylesheet" href="style.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .admin-main { padding: 30px 0; }
-        /* İstatistik Kartları */
-        .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 20px; border-left: 5px solid #ff6600; }
-        .stat-card i { font-size: 35px; color: #ff6600; }
-        .stat-card div h3 { font-size: 14px; color: #888; margin: 0; text-transform: uppercase; }
-        .stat-card div p { font-size: 24px; font-weight: 700; margin: 5px 0 0; color: #333; }
+        body { background-color: #f1f5f9; margin: 0; padding: 0; }
+        .admin-content { margin-left: 260px; padding: 30px; font-family: 'Segoe UI', sans-serif; }
+        /* Kart sayısını 5'e çıkardık, grid yapısını ayarlayalım */
+        .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #ff6600; display: flex; align-items: center; justify-content: space-between; text-decoration: none; transition: 0.3s; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         
-        .admin-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 30px; }
-        .table-custom { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .table-custom th, .table-custom td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
-        
-        /* DURUM ROZETLERİ (Yeni) */
-        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .status-pending { background: #fff3cd; color: #856404; }
-        .status-approved { background: #d4edda; color: #155724; }
-        .status-shipped { background: #d1ecf1; color: #0c5460; }
+        /* Özel Renkli Kartlar */
+        .card.critical { border-left-color: #ef4444; } /* Stok bittiyse kırmızı */
+        .card.purchase { border-left-color: #8b5cf6; }  /* Tedarik için mor */
+        .card.sales { border-left-color: #3b82f6; }     /* Siparişler için mavi */
 
-        /* İŞLEM BUTONLARI (Yeni) */
-        .btn-approve { background: #007bff; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: 600; }
-        .btn-ship { background: #ffc107; color: #212529; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: 600; }
-        .btn-add { background: #28a745; color:white; padding: 10px 20px; border-radius: 5px; text-decoration:none; display:inline-block; }
+        .card-info h3 { margin: 0; font-size: 24px; color: #1e293b; }
+        .card-info p { margin: 5px 0 0; color: #64748b; font-size: 12px; text-transform: uppercase; font-weight: bold; }
+        .card-icon { font-size: 28px; color: #cbd5e1; }
+
+        .admin-table-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .admin-table { width: 100%; border-collapse: collapse; }
+        .admin-table th { background: #f8fafc; color: #475569; padding: 12px; text-align: left; font-size: 14px; border-bottom: 2px solid #e2e8f0; }
+        .admin-table td { padding: 15px 12px; border-bottom: 1px solid #e2e8f0; color: #334155; font-size: 14px; }
+        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .status-pending { background: #fef3c7; color: #d97706; }
+        .status-completed { background: #dcfce3; color: #166534; }
     </style>
 </head>
 <body>
-    <?php include 'header.php'; ?>
 
-    <div class="container admin-main">
+    <?php include 'admin_sidebar.php'; ?>
+
+    <main class="admin-content">
+        <h2 style="margin-top: 0; color: #1e293b;">Yönetim Paneli Özet</h2>
         
-        <!-- ÜST İSTATİSTİK KARTLARI -->
-        <div class="stats-container">
-            <div class="stat-card">
-                <i class="fa-solid fa-boxes-stacked"></i>
-                <div><h3>Toplam Ürün</h3><p><?php echo $toplamUrun; ?></p></div>
+        <div class="dashboard-cards">
+            <a href="kritik_stok_raporu.php" class="card critical">
+                <div class="card-info">
+                    <h3><?php echo $kritikStokSayisi; ?></h3>
+                    <p>Kritik Stok</p>
+                </div>
+                <i class="fa-solid fa-triangle-exclamation card-icon" style="color: #fca5a5;"></i>
+            </a>
+
+            <a href="satinalma_listele.php" class="card purchase">
+                <div class="card-info">
+                    <h3><?php echo $bekleyenTedarik; ?></h3>
+                    <p>Bekleyen Tedarik</p>
+                </div>
+                <i class="fa-solid fa-truck-ramp-box card-icon" style="color: #c4b5fd;"></i>
+            </a>
+
+            <a href="admin_siparisler.php" class="card sales">
+                <div class="card-info">
+                    <h3><?php echo $bekleyenSiparis; ?></h3>
+                    <p>Bekleyen Sipariş</p>
+                </div>
+                <i class="fa-solid fa-cart-shopping card-icon" style="color: #93c5fd;"></i>
+            </a>
+
+            <div class="card">
+                <div class="card-info">
+                    <h3><?php echo $toplamUrun; ?></h3>
+                    <p>Toplam Ürün</p>
+                </div>
+                <i class="fa-solid fa-tags card-icon"></i>
             </div>
-            <div class="stat-card">
-                <i class="fa-solid fa-cart-arrow-down"></i>
-                <div><h3>Toplam Sipariş</h3><p><?php echo $toplamSiparis; ?></p></div>
-            </div>
-            <div class="stat-card">
-                <i class="fa-solid fa-money-bill-trend-up"></i>
-                <div><h3>Toplam Ciro</h3><p><?php echo number_format($toplamCiro, 2, ',', '.'); ?> TL</p></div>
+
+            <div class="card">
+                <div class="card-info">
+                    <h3><?php echo $toplamKullanici; ?></h3>
+                    <p>Müşteriler</p>
+                </div>
+                <i class="fa-solid fa-users card-icon"></i>
             </div>
         </div>
 
-        <!-- SİPARİŞ YÖNETİMİ -->
-        <div class="admin-card">
-            <h2><i class="fa-solid fa-receipt"></i> Son Siparişler</h2>
-            <table class="table-custom">
+        <div class="admin-table-container">
+            <h3 style="margin-top: 0; color: #334155;">Son Satış Siparişleri</h3>
+            <table class="admin-table">
                 <thead>
                     <tr>
                         <th>No</th>
-                        <th>Müşteri</th>
+                        <th>Müşteri / Alıcı</th>
+                        <th>Ödeme</th>
                         <th>Tarih</th>
-                        <th>Toplam</th>
+                        <th>Tutar</th>
                         <th>Durum</th>
-                        <th>İşlem</th> <!-- 6. Sütun eklendi -->
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach($siparisler as $s): ?>
-                    <tr>
-                        <td>#<?php echo $s['Id']; ?></td>
-                        <td><?php echo $s['MusteriAd']; ?></td>
-                        <td><?php echo date('d.m.Y H:i', strtotime($s['OrderAt'])); ?></td>
-                        <td><?php echo number_format($s['TotalPrice'], 2, ',', '.'); ?> TL</td>
-                        
-                        <!-- Dinamik Durum Rozeti -->
-                        <td>
-                            <span class="status-badge status-<?php echo $s['Status']; ?>">
-                                <?php 
-                                    if($s['Status'] == 'pending') echo 'Bekliyor';
-                                    elseif($s['Status'] == 'approved') echo 'Onaylandı';
-                                    elseif($s['Status'] == 'shipped') echo 'Kargolandı';
-                                    else echo $s['Status'];
-                                ?>
-                            </span>
-                        </td>
-
-                        <!-- Dinamik İşlem Butonları -->
-                        <td>
-                            <?php if($s['Status'] == 'pending'): ?>
-                                <a href="siparis_islem.php?id=<?php echo $s['Id']; ?>&durum=approved" class="btn-approve">Onayla</a>
-                            <?php elseif($s['Status'] == 'approved'): ?>
-                                <a href="siparis_islem.php?id=<?php echo $s['Id']; ?>&durum=shipped" class="btn-ship">Kargoya Ver</a>
-                            <?php else: ?>
-                                <span style="color: #28a745;"><i class="fa-solid fa-check-double"></i> Tamamlandı</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- ÜRÜN YÖNETİMİ -->
-        <div class="admin-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2><i class="fa-solid fa-screwdriver-wrench"></i> Ürün Yönetimi</h2>
-                <a href="urun_ekle.php" class="btn-add">+ Yeni Ürün Ekle</a>
-            </div>
-            
-            <table class="table-custom">
-                <thead>
-                    <tr>
-                        <th>Görsel</th>
-                        <th>Ürün Adı</th>
-                        <th>Fiyat</th>
                         <th>İşlem</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach($urunler as $u): ?>
-                    <tr>
-                        <td><img src="<?php echo $u['ImagePath']; ?>" width="40" style="border-radius:4px;"></td>
-                        <td><?php echo htmlspecialchars($u['Name']); ?></td>
-                        <td><?php echo number_format($u['Price'], 2, ',', '.'); ?> TL</td>
-                        <td>
-                            <a href="sil.php?id=<?php echo $u['Id']; ?>" style="color: #dc3545;" onclick="return confirm('Silmek istediğine emin misin?')">
-                                <i class="fa-solid fa-trash"></i> Sil
-                            </a>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
+                    <?php if (empty($sonSiparisler)): ?>
+                        <tr><td colspan="7" style="text-align: center;">Henüz sipariş yok.</td></tr>
+                    <?php else: ?>
+                        <?php foreach($sonSiparisler as $siparis): ?>
+                            <tr>
+                                <td>#<?php echo $siparis['Id']; ?></td>
+                                <td>
+                                    <strong><?php echo htmlspecialchars($siparis['ReceiverName'] ?? $siparis['UserName']); ?></strong>
+                                </td>
+                                <td><?php echo $siparis['PaymentMethod']; ?></td>
+                                <td><?php echo date('d.m.Y H:i', strtotime($siparis['OrderAt'])); ?></td>
+                                <td><?php echo number_format($siparis['TotalPrice'], 2, ',', '.'); ?> TL</td>
+                                <td>
+                                    <?php 
+                                        $s = $siparis['Status'];
+                                        $class = ($s == 'pending') ? 'status-pending' : 'status-completed';
+                                        $text = ($s == 'pending') ? 'Bekliyor' : 'Tamamlandı';
+                                        echo "<span class='status-badge $class'>$text</span>";
+                                    ?>
+                                </td>
+                                <td>
+                                    <a href="admin_siparis_detay.php?id=<?php echo $siparis['Id']; ?>" style="color: #2563eb;">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
-    </div>
+    </main>
 
-    <?php include 'footer.php'; ?>
 </body>
 </html>

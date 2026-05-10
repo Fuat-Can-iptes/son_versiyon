@@ -13,21 +13,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $sifre = trim($_POST['sifre']);
 
     if (!empty($email) && !empty($sifre)) {
-        // DİKKAT: Veritabanındaki sütun adın 'Password_hash' olduğu için sorguyu güncelledik
-        $sorgu = $db->prepare("SELECT * FROM users WHERE Email = ? AND Password_hash = ? AND IsActive = 1");
-        $sorgu->execute([$email, $sifre]);
+        
+        // DİKKAT 1: SQL sorgusunda artık şifreyi aramıyoruz, sadece Email ile kullanıcıyı buluyoruz!
+        $sorgu = $db->prepare("SELECT * FROM users WHERE Email = ? AND IsActive = 1");
+        $sorgu->execute([$email]);
         $kullanici = $sorgu->fetch(PDO::FETCH_ASSOC);
 
+        // Kullanıcı bulunduysa şifre kontrolüne geç
         if ($kullanici) {
-            // Giriş Başarılı
-            $_SESSION['user_id'] = $kullanici['Id'];
-            $_SESSION['user_name'] = $kullanici['FName']; // Veritabanındaki 'FName' sütununu alıyoruz
-            $_SESSION['user_role'] = $kullanici['RoleId']; 
-            
-            header("Location: index.php");
-            exit;
+            $db_sifre = $kullanici['Password_hash'];
+
+            // DİKKAT 2: Profilim sayfasındaki aynı "Maymuncuk" mantığı ile şifreyi PHP'de doğruluyoruz
+            if (password_verify($sifre, $db_sifre) || $sifre === $db_sifre || md5($sifre) === $db_sifre || sha1($sifre) === $db_sifre) {
+                
+                // Şifre eşleşti, Giriş Başarılı!
+                $_SESSION['user_id'] = $kullanici['Id'];
+                $_SESSION['user_name'] = $kullanici['FName']; 
+                $_SESSION['user_role'] = $kullanici['RoleId']; 
+                
+                header("Location: index.php");
+                exit;
+            } else {
+                $hata = "E-posta veya şifre hatalı!";
+            }
         } else {
-            $hata = "E-posta veya şifre hatalı!";
+            $hata = "E-posta veya şifre hatalı!"; // Kullanıcı hesabı hiç yoksa
         }
     } else {
         $hata = "Lütfen tüm alanları doldurun!";
@@ -67,9 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <input type="password" name="sifre" required placeholder="******">
             </div>
             <button type="submit" class="btn-submit">Giriş Yap</button>
-<p style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
-    Hesabınız yok mu? <a href="kayit.php" style="color: #ff6600; font-weight: bold; text-decoration: none;">Hemen Kayıt Ol</a>
-</p>
+            <p style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
+                Hesabınız yok mu? <a href="kayit.php" style="color: #ff6600; font-weight: bold; text-decoration: none;">Hemen Kayıt Ol</a>
+            </p>
         </form>
     </div>
 </body>

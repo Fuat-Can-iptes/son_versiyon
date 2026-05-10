@@ -2,11 +2,11 @@
 session_start();
 include 'baglan.php'; 
 
-// 1. "İndirimli Ürünler" Sorgusu
+// 1. "İndirimli Ürünler" Sorgusu (En ucuz 4 ürün)
 $sorguIndirimli = $db->query("SELECT * FROM Products WHERE IsActive = 1 ORDER BY Price ASC LIMIT 4");
 $indirimliUrunler = $sorguIndirimli->fetchAll(PDO::FETCH_ASSOC);
 
-// 2. "En Çok Tercih Edilenler" Sorgusu
+// 2. "En Çok Tercih Edilenler" Sorgusu (En son eklenen 4 ürün)
 $sorguCokSatanlar = $db->query("SELECT * FROM Products WHERE IsActive = 1 ORDER BY Id DESC LIMIT 4");
 $cokSatanlar = $sorguCokSatanlar->fetchAll(PDO::FETCH_ASSOC);
 
@@ -22,6 +22,38 @@ include 'header.php';
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    
+    <style>
+        /* Tükendi Rozeti ve Görsel Efektleri */
+        .card-image {
+            position: relative;
+            overflow: hidden;
+        }
+        .out-of-stock-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: #d93025; /* Koyu kırmızı */
+            color: white;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 3px;
+            z-index: 5;
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .img-grayscale {
+            filter: grayscale(100%);
+            opacity: 0.6;
+        }
+        .btn-out-of-stock {
+            background-color: #cbd5e1 !important;
+            cursor: not-allowed !important;
+            color: #64748b !important;
+            border: none !important;
+        }
+    </style>
 </head>
 <body>
 
@@ -50,9 +82,16 @@ include 'header.php';
                             <i class="fa-regular fa-heart"></i>
                         </a>
                         <div class="badge" style="background-color: #ff6600;">Fırsat</div>
+                        
                         <a href="urun-detay.php?id=<?php echo $urun['Id']; ?>">
-                            <div class="card-image"><img src="<?php echo $urun['ImagePath']; ?>" alt="Ürün"></div>
+                            <div class="card-image">
+                                <?php if ($urun['Stock'] <= 0): ?>
+                                    <div class="out-of-stock-badge">Tükendi</div>
+                                <?php endif; ?>
+                                <img src="<?php echo $urun['ImagePath']; ?>" alt="Ürün" class="<?php echo ($urun['Stock'] <= 0) ? 'img-grayscale' : ''; ?>">
+                            </div>
                         </a>
+
                         <div class="card-details">
                             <span class="cargo-badge">Hızlı Kargo</span>
                             <h3 class="product-title"><?php echo htmlspecialchars($urun['Name']); ?></h3>
@@ -62,7 +101,12 @@ include 'header.php';
                             <form action="sepet.php" method="POST">
                                 <input type="hidden" name="urun_id" value="<?php echo $urun['Id']; ?>">
                                 <input type="hidden" name="islem" value="ekle">
-                                <button type="submit" class="add-to-cart-btn">Sepete Ekle</button>
+                                
+                                <?php if ($urun['Stock'] > 0): ?>
+                                    <button type="submit" class="add-to-cart-btn">Sepete Ekle</button>
+                                <?php else: ?>
+                                    <button type="button" class="add-to-cart-btn btn-out-of-stock" disabled>Stokta Yok</button>
+                                <?php endif; ?>
                             </form>
                         </div>
                     </div>
@@ -79,9 +123,16 @@ include 'header.php';
                     <a href="favori_islem.php?id=<?php echo $urun['Id']; ?>" class="fav-btn">
                         <i class="fa-regular fa-heart"></i>
                     </a>
+                    
                     <a href="urun-detay.php?id=<?php echo $urun['Id']; ?>">
-                        <div class="card-image"><img src="<?php echo $urun['ImagePath']; ?>" alt="Ürün"></div>
+                        <div class="card-image">
+                            <?php if ($urun['Stock'] <= 0): ?>
+                                <div class="out-of-stock-badge">Tükendi</div>
+                            <?php endif; ?>
+                            <img src="<?php echo $urun['ImagePath']; ?>" alt="Ürün" class="<?php echo ($urun['Stock'] <= 0) ? 'img-grayscale' : ''; ?>">
+                        </div>
                     </a>
+
                     <div class="card-details">
                         <span class="cargo-badge">Ücretsiz Kargo</span>
                         <h3 class="product-title"><?php echo htmlspecialchars($urun['Name']); ?></h3>
@@ -91,7 +142,12 @@ include 'header.php';
                         <form action="sepet.php" method="POST">
                             <input type="hidden" name="urun_id" value="<?php echo $urun['Id']; ?>">
                             <input type="hidden" name="islem" value="ekle">
-                            <button type="submit" class="add-to-cart-btn">Sepete Ekle</button>
+                            
+                            <?php if ($urun['Stock'] > 0): ?>
+                                <button type="submit" class="add-to-cart-btn">Sepete Ekle</button>
+                            <?php else: ?>
+                                <button type="button" class="add-to-cart-btn btn-out-of-stock" disabled>Stokta Yok</button>
+                            <?php endif; ?>
                         </form>
                     </div>
                 </div>

@@ -100,7 +100,7 @@ $genelToplam = 0;
                     <h3 style="margin: 0;">Genel Toplam: <span style="color: #ff6600; font-size: 24px;"><?php echo number_format($genelToplam, 2, ',', '.'); ?> TL</span></h3>
                     <!-- sepet.php içinde toplam fiyatın altına -->
 <div style="text-align: right; margin-top: 20px;">
-    <a href="siparis_ver.php" class="filter-btn" style="padding: 15px 30px; text-decoration: none;">
+    <a href="odeme.php" class="filter-btn" style="padding: 15px 30px; text-decoration: none;">
         <i class="fa-solid fa-check-double"></i> Siparişi Tamamla
     </a>
 </div>
