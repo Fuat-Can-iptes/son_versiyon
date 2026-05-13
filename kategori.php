@@ -62,7 +62,7 @@ $filtrelenmisUrunler = $sorgu->fetchAll(PDO::FETCH_ASSOC);
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>NalburDükkan - <?php echo ucfirst(str_replace('-', ' ', $secilenKat)); ?></title>
+    <title>Nalbur Dükkan - <?php echo ucfirst(str_replace('-', ' ', $secilenKat)); ?></title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
