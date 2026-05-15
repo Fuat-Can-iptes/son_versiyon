@@ -2,11 +2,11 @@
 session_start();
 include 'baglan.php'; 
 
-// 1. "İndirimli Ürünler" Sorgusu (En ucuz 4 ürün)
+// 1. "İndirimli Ürünler" Sorgusu
 $sorguIndirimli = $db->query("SELECT * FROM Products WHERE IsActive = 1 ORDER BY Price ASC LIMIT 4");
 $indirimliUrunler = $sorguIndirimli->fetchAll(PDO::FETCH_ASSOC);
 
-// 2. "En Çok Tercih Edilenler" Sorgusu (En son eklenen 4 ürün)
+// 2. "En Çok Tercih Edilenler" Sorgusu
 $sorguCokSatanlar = $db->query("SELECT * FROM Products WHERE IsActive = 1 ORDER BY Id DESC LIMIT 4");
 $cokSatanlar = $sorguCokSatanlar->fetchAll(PDO::FETCH_ASSOC);
 
@@ -24,35 +24,22 @@ include 'header.php';
     <link rel="stylesheet" href="style.css">
     
     <style>
-        /* Tükendi Rozeti ve Görsel Efektleri */
-        .card-image {
-            position: relative;
-            overflow: hidden;
-        }
         .out-of-stock-badge {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background-color: #d93025; /* Koyu kırmızı */
-            color: white;
-            padding: 4px 10px;
-            font-size: 11px;
-            font-weight: bold;
-            border-radius: 3px;
-            z-index: 5;
-            text-transform: uppercase;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            position: absolute; top: 10px; left: 10px; background-color: #d93025;
+            color: white; padding: 4px 10px; font-size: 11px; font-weight: bold;
+            border-radius: 3px; z-index: 5; text-transform: uppercase;
         }
-        .img-grayscale {
-            filter: grayscale(100%);
-            opacity: 0.6;
+        .img-grayscale { filter: grayscale(100%); opacity: 0.6; }
+        .btn-out-of-stock { background-color: #cbd5e1 !important; cursor: not-allowed !important; color: #64748b !important; }
+
+        /* AJAX FAVORİ BUTONU STİLİ */
+        .fav-btn {
+            position: absolute; top: 15px; right: 15px; z-index: 99; /* Resim linkinin üstünde kalması için */
+            background: white; width: 35px; height: 35px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: 0.3s;
         }
-        .btn-out-of-stock {
-            background-color: #cbd5e1 !important;
-            cursor: not-allowed !important;
-            color: #64748b !important;
-            border: none !important;
-        }
+        .fav-btn:hover { transform: scale(1.1); }
     </style>
 </head>
 <body>
@@ -76,11 +63,21 @@ include 'header.php';
         <section class="home-section">
             <h2 class="section-title">İndirimli Ürünler</h2>
             <div class="product-grid">
-                <?php foreach($indirimliUrunler as $urun): ?>
-                    <div class="product-card">
-                        <a href="favori_islem.php?id=<?php echo $urun['Id']; ?>" class="fav-btn">
-                            <i class="fa-regular fa-heart"></i>
+                <?php foreach($indirimliUrunler as $urun): 
+                    // FAVORİ KONTROLÜ
+                    $is_fav = false;
+                    if (isset($_SESSION['user_id'])) {
+                        $f_check = $db->prepare("SELECT 1 FROM Favorites WHERE UserId = ? AND ProductId = ?");
+                        $f_check->execute([$_SESSION['user_id'], $urun['Id']]);
+                        if ($f_check->rowCount() > 0) $is_fav = true;
+                    }
+                ?>
+                    <div class="product-card" style="position: relative;">
+                        <a href="javascript:void(0);" class="fav-btn ajax-fav-btn" data-id="<?php echo $urun['Id']; ?>">
+                            <i class="fa-<?php echo $is_fav ? 'solid' : 'regular'; ?> fa-heart" 
+                               style="color: <?php echo $is_fav ? '#ff6600' : '#cbd5e1'; ?>;"></i>
                         </a>
+
                         <div class="badge" style="background-color: #ff6600;">Fırsat</div>
                         
                         <a href="urun-detay.php?id=<?php echo $urun['Id']; ?>">
@@ -100,13 +97,9 @@ include 'header.php';
                             </div>
                             <form action="sepet.php" method="POST">
                                 <input type="hidden" name="urun_id" value="<?php echo $urun['Id']; ?>">
-                                <input type="hidden" name="islem" value="ekle">
-                                
-                                <?php if ($urun['Stock'] > 0): ?>
-                                    <button type="submit" class="add-to-cart-btn">Sepete Ekle</button>
-                                <?php else: ?>
-                                    <button type="button" class="add-to-cart-btn btn-out-of-stock" disabled>Stokta Yok</button>
-                                <?php endif; ?>
+                                <button type="submit" class="add-to-cart-btn" <?php echo ($urun['Stock'] <= 0) ? 'disabled' : ''; ?>>
+                                    <?php echo ($urun['Stock'] <= 0) ? 'Stokta Yok' : 'Sepete Ekle'; ?>
+                                </button>
                             </form>
                         </div>
                     </div>
@@ -117,11 +110,21 @@ include 'header.php';
         <section class="home-section" style="margin-top: 50px;">
             <h2 class="section-title">En Çok Tercih Edilenler</h2>
             <div class="product-grid">
-                <?php foreach($cokSatanlar as $urun): ?>
-                <div class="product-card">
+                <?php foreach($cokSatanlar as $urun): 
+                    // FAVORİ KONTROLÜ
+                    $is_fav = false;
+                    if (isset($_SESSION['user_id'])) {
+                        $f_check = $db->prepare("SELECT 1 FROM Favorites WHERE UserId = ? AND ProductId = ?");
+                        $f_check->execute([$_SESSION['user_id'], $urun['Id']]);
+                        if ($f_check->rowCount() > 0) $is_fav = true;
+                    }
+                ?>
+                <div class="product-card" style="position: relative;">
                     <div class="badge" style="background-color: #28a745;">Çok Satan</div>
-                    <a href="favori_islem.php?id=<?php echo $urun['Id']; ?>" class="fav-btn">
-                        <i class="fa-regular fa-heart"></i>
+                    
+                    <a href="javascript:void(0);" class="fav-btn ajax-fav-btn" data-id="<?php echo $urun['Id']; ?>">
+                        <i class="fa-<?php echo $is_fav ? 'solid' : 'regular'; ?> fa-heart" 
+                           style="color: <?php echo $is_fav ? '#ff6600' : '#cbd5e1'; ?>;"></i>
                     </a>
                     
                     <a href="urun-detay.php?id=<?php echo $urun['Id']; ?>">
@@ -141,13 +144,9 @@ include 'header.php';
                         </div>
                         <form action="sepet.php" method="POST">
                             <input type="hidden" name="urun_id" value="<?php echo $urun['Id']; ?>">
-                            <input type="hidden" name="islem" value="ekle">
-                            
-                            <?php if ($urun['Stock'] > 0): ?>
-                                <button type="submit" class="add-to-cart-btn">Sepete Ekle</button>
-                            <?php else: ?>
-                                <button type="button" class="add-to-cart-btn btn-out-of-stock" disabled>Stokta Yok</button>
-                            <?php endif; ?>
+                            <button type="submit" class="add-to-cart-btn" <?php echo ($urun['Stock'] <= 0) ? 'disabled' : ''; ?>>
+                                <?php echo ($urun['Stock'] <= 0) ? 'Stokta Yok' : 'Sepete Ekle'; ?>
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -158,6 +157,31 @@ include 'header.php';
     </main>
 
     <script>
+        // --- AJAX FAVORİ İŞLEMİ ---
+        document.querySelectorAll('.ajax-fav-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const productId = this.getAttribute('data-id');
+                const heartIcon = this.querySelector('i');
+                
+                fetch(`favori_islem.php?id=${productId}`)
+                    .then(response => response.text())
+                    .then(data => {
+                        const status = data.trim();
+                        if (status === 'added') {
+                            heartIcon.classList.replace('fa-regular', 'fa-solid');
+                            heartIcon.style.color = '#ff6600';
+                        } else if (status === 'removed') {
+                            heartIcon.classList.replace('fa-solid', 'fa-regular');
+                            heartIcon.style.color = '#cbd5e1';
+                        } else if (status === 'unauthorized') {
+                            alert("Önce giriş yapmalısınız!");
+                            window.location.href = "giris.php";
+                        }
+                    });
+            });
+        });
+
+        // --- SLIDER SCRIPTS ---
         const wrapper = document.querySelector('.slider-wrapper');
         const dots = document.querySelectorAll('.dot');
         let slideIndex = 0;
@@ -175,6 +199,5 @@ include 'header.php';
     </script>
 
 <?php include 'footer.php'; ?>
-
 </body>
 </html>

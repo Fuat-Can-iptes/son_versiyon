@@ -2,9 +2,9 @@
 session_start();
 include 'baglan.php';
 
-// Güvenlik: Sadece adminler yapabilir
+// Güvenlik kontrolü
 if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] != 1) {
-    echo "error";
+    echo json_encode(['status' => 'unauthorized', 'message' => 'Yetkisiz erişim!']);
     exit;
 }
 
@@ -13,7 +13,6 @@ if (isset($_POST['id']) && isset($_POST['fiyat'])) {
     $fiyat = $_POST['fiyat'];
 
     try {
-        // Products tablosundaki Price sütununu güncelliyoruz
         $sorgu = $db->prepare("UPDATE products SET Price = :fiyat WHERE Id = :id");
         $sonuc = $sorgu->execute([
             ':fiyat' => $fiyat,
@@ -21,12 +20,12 @@ if (isset($_POST['id']) && isset($_POST['fiyat'])) {
         ]);
 
         if($sonuc) {
-            echo "ok";
+            echo json_encode(['status' => 'success', 'message' => 'Fiyat güncellendi!']);
         } else {
-            echo "hata";
+            echo json_encode(['status' => 'error', 'message' => 'Güncelleme başarısız.']);
         }
     } catch (Exception $e) {
-        echo "hata";
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
     }
 }
 ?>

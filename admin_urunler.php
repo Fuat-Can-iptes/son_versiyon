@@ -148,14 +148,16 @@ $urunler = $sorgu->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </main>
 
-    <script>
-        // STOK GÜNCELLEME (Senin orijinal AJAX kodun)
+   <script>
+        // --- STOK GÜNCELLEME (Mevcut, dokunmadık) ---
         document.querySelectorAll('.stock-input').forEach(input => {
             input.addEventListener('change', function() {
                 const productId = this.getAttribute('data-id');
                 const newStock = this.value;
                 const statusSpan = document.getElementById('status-' + productId);
+                
                 statusSpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: #64748b;"></i>';
+                
                 fetch('ajax_stok_guncelle.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -167,29 +169,50 @@ $urunler = $sorgu->fetchAll(PDO::FETCH_ASSOC);
                         statusSpan.innerHTML = '<i class="fa-solid fa-check" style="color: #166534;"></i>';
                         this.style.color = (newStock < 5) ? '#ef4444' : '#166534';
                         setTimeout(() => { statusSpan.innerHTML = ''; }, 2000);
+                    } else {
+                        statusSpan.innerHTML = '<i class="fa-solid fa-xmark" style="color: #ef4444;"></i>';
                     }
-                });
+                })
+                .catch(err => console.error(err));
             });
         });
 
-        // FİYAT GÜNCELLEME (Daha önce eklediğimiz AJAX kodun)
+        // --- FİYAT GÜNCELLEME (JSON Yapısına Uyumlu) ---
         document.querySelectorAll('.price-input').forEach(input => {
             input.addEventListener('change', function() {
                 const productId = this.getAttribute('data-id');
                 const newPrice = this.value;
                 const statusSpan = document.getElementById('p-status-' + productId);
-                statusSpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                
+                statusSpan.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: #ff6600;"></i>';
+                
+                // FormData ile gönderme (JSON yanıtlayan PHP'ye en uygunu)
+                const formData = new FormData();
+                formData.append('id', productId);
+                formData.append('fiyat', newPrice);
+
                 fetch('ajax_fiyat_guncelle.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'id=' + productId + '&fiyat=' + newPrice
+                    body: formData
                 })
-                .then(response => response.text())
+                .then(response => response.json()) // BURASI ÖNEMLİ: json olarak okuyoruz
                 .then(data => {
-                    if(data.trim() === 'ok') {
+                    if(data.status === 'success') {
                         statusSpan.innerHTML = '<i class="fa-solid fa-check" style="color: #166534;"></i>';
-                        setTimeout(() => { statusSpan.innerHTML = ''; }, 2000);
+                        this.style.borderColor = "#166534"; // Başarılıysa inputun kenarını yeşil yap
+                        
+                        setTimeout(() => { 
+                            statusSpan.innerHTML = ''; 
+                            this.style.borderColor = "#cbd5e1"; // Kenarlığı eski haline getir
+                        }, 2000);
+                    } else {
+                        statusSpan.innerHTML = '<i class="fa-solid fa-xmark" style="color: #ef4444;"></i>';
+                        alert("Hata: " + data.message);
                     }
+                })
+                .catch(err => {
+                    console.error(err);
+                    statusSpan.innerHTML = '<i class="fa-solid fa-xmark" style="color: #ef4444;"></i>';
                 });
             });
         });

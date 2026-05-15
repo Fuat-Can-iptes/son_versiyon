@@ -2,9 +2,9 @@
 session_start();
 include 'baglan.php';
 
-// 1. Güvenlik: Giriş yapmayan favori ekleyemez
+// Güvenlik: Giriş kontrolü
 if (!isset($_SESSION['user_id'])) {
-    header("Location: giris.php?hata=once_giris_yap");
+    echo "unauthorized"; // JavaScript bu mesajı alınca giriş sayfasına yönlendirecek
     exit;
 }
 
@@ -12,21 +12,19 @@ if (isset($_GET['id'])) {
     $u_id = $_SESSION['user_id'];
     $p_id = intval($_GET['id']);
 
-    // 2. Kontrol: Zaten favoride mi?
     $kontrol = $db->prepare("SELECT * FROM Favorites WHERE UserId = ? AND ProductId = ?");
     $kontrol->execute([$u_id, $p_id]);
 
     if ($kontrol->rowCount() > 0) {
-        // Varsa favoriden çıkar (Kalbe tekrar basınca silme özelliği)
+        // Zaten varsa çıkar
         $islem = $db->prepare("DELETE FROM Favorites WHERE UserId = ? AND ProductId = ?");
         $islem->execute([$u_id, $p_id]);
+        echo "removed"; 
     } else {
-        // Yoksa favorilere ekle
+        // Yoksa ekle
         $islem = $db->prepare("INSERT INTO Favorites (UserId, ProductId) VALUES (?, ?)");
         $islem->execute([$u_id, $p_id]);
+        echo "added";
     }
 }
-
-// 3. Dönüş: Geldiği sayfaya geri gönder
-header("Location: " . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
 exit;
