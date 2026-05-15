@@ -23,8 +23,6 @@ $soruIsaretleri = str_repeat('?,', count($sluglar) - 1) . '?';
 $params = $sluglar; 
 $ek_sorgu = "";
 
-// --- DİNAMİK FİLTRELEME MANTIĞI ---
-
 if (isset($_GET['f']) && $_GET['f'] == 'indirim') {
     $ek_sorgu .= " AND p.OldPrice > p.Price";
 }
@@ -43,7 +41,6 @@ if (isset($_GET['p'])) {
     }
 }
 
-// --- SQL SORGUSU (Zaten JOIN yapılmış, harika!) ---
 $sorguMetni = "
     SELECT p.*, s.Quantity as StokMiktari 
     FROM products p 
@@ -67,7 +64,6 @@ $filtrelenmisUrunler = $sorgu->fetchAll(PDO::FETCH_ASSOC);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* Tükendi Rozeti Stili */
         .out-of-stock-badge {
             position: absolute;
             top: 10px;
@@ -78,23 +74,41 @@ $filtrelenmisUrunler = $sorgu->fetchAll(PDO::FETCH_ASSOC);
             font-size: 11px;
             font-weight: bold;
             border-radius: 3px;
-            z-index: 10;
+            z-index: 5;
             text-transform: uppercase;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        /* Stokta yoksa resim efekti */
         .img-grayscale {
             filter: grayscale(100%);
             opacity: 0.6;
         }
 
-        /* Pasif buton stili */
         .btn-disabled {
             background-color: #f1f5f9 !important;
             color: #94a3b8 !important;
             border: 1.5px solid #e2e8f0 !important;
             cursor: not-allowed !important;
+        }
+
+        /* FAVORİ BUTONU İÇİN TIKLAMA GARANTİSİ */
+        .fav-btn-overlay {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 99; /* Ürün resim linkinin üstünde olması için */
+            text-decoration: none;
+            transition: transform 0.2s;
+        }
+        .fav-btn-overlay:hover {
+            transform: scale(1.1);
         }
     </style>
 </head>
@@ -153,15 +167,26 @@ $filtrelenmisUrunler = $sorgu->fetchAll(PDO::FETCH_ASSOC);
                         <p style="color: #64748b;">Bu kriterlere uygun ürün bulunamadı.</p>
                     </div>
                 <?php else: ?>
-                    <?php foreach($filtrelenmisUrunler as $urun): ?>
+                    <?php foreach($filtrelenmisUrunler as $urun): 
+                        // --- FAVORİ KONTROLÜ ---
+                        $is_fav = false;
+                        if (isset($_SESSION['user_id'])) {
+                            $fav_sorgu = $db->prepare("SELECT 1 FROM Favorites WHERE UserId = ? AND ProductId = ?");
+                            $fav_sorgu->execute([$_SESSION['user_id'], $urun['Id']]);
+                            if ($fav_sorgu->rowCount() > 0) {
+                                $is_fav = true;
+                            }
+                        }
+                    ?>
                         <div class="product-card" style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 15px rgba(0,0,0,0.05); transition: 0.3s; border: 1px solid #f1f5f9; position: relative;">
                             
                             <?php if (isset($urun['StokMiktari']) && $urun['StokMiktari'] <= 0): ?>
                                 <div class="out-of-stock-badge">Tükendi</div>
                             <?php endif; ?>
 
-                            <a href="favori_islem.php?id=<?php echo $urun['Id']; ?>" style="position: absolute; top: 15px; right: 15px; background: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: #cbd5e1; z-index: 1;">
-                                <i class="fa-regular fa-heart"></i>
+                            <a href="favori_islem.php?id=<?php echo $urun['Id']; ?>" class="fav-btn-overlay">
+                                <i class="fa-<?php echo $is_fav ? 'solid' : 'regular'; ?> fa-heart" 
+                                   style="color: <?php echo $is_fav ? '#ff6600' : '#cbd5e1'; ?>;"></i>
                             </a>
 
                             <a href="urun-detay.php?id=<?php echo $urun['Id']; ?>" style="text-decoration: none;">
@@ -204,6 +229,5 @@ $filtrelenmisUrunler = $sorgu->fetchAll(PDO::FETCH_ASSOC);
     </main>
 
     <?php include 'footer.php'; ?>
-
 </body>
 </html>
