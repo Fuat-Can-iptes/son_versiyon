@@ -32,12 +32,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $mesaj = "Bu e-posta adresi zaten kullanımda!";
             $tip = "error";
         } else {
-            // 3. Veritabanına Kayıt (RoleId = 2 olarak kaydediyoruz)
+            // 3. Veritabanına Kayıt (Şifre Hashleme Ekli)
             try {
+                // Şifreyi BCRYPT algoritması ile hashliyoruz (En güvenli ve modern yöntem)
+                $hashli_sifre = password_hash($sifre, PASSWORD_DEFAULT);
+
                 $sorgu = $db->prepare("INSERT INTO users (RoleId, FName, LName, Email, Phone, Password_hash, IsActive) VALUES (?, ?, ?, ?, ?, ?, 1)");
-                // Not: Profesyonel projelerde password_hash() fonksiyonu kullanılır. 
-                // Şimdilik senin login sisteminle uyumlu olması için düz metin kaydediyoruz.
-                $sorgu->execute([2, $fname, $lname, $email, $phone, $sifre]);
+                
+                // Artık düz şifre yerine $hashli_sifre verisini gönderiyoruz
+                $sorgu->execute([2, $fname, $lname, $email, $phone, $hashli_sifre]);
 
                 $mesaj = "Kaydınız başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.";
                 $tip = "success";
